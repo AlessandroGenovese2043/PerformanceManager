@@ -4,6 +4,9 @@ class Application:
         self.api_number = api_number
         self.api_list = []
 
+    def init_add_api(self, api):
+        self.api_list.append(api)
+
     def add_api(self, api):
         self.api_number += 1
         self.api_list.append(api)

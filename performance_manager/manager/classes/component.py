@@ -34,3 +34,12 @@ class Component:
         for row in self.matrix:
             print(row)
 
+    '''def _format_matrix(self):
+        # Format the matrix for better readability
+        formatted_matrix = "\n".join(["\t".join(map(str, row)) for row in self.matrix])
+        return formatted_matrix'''
+
+    def info(self):
+        return (f"Component: {self.name}, InputMax: {self.inputMax}, InputLevel: {self.inputLevel}, ConfHW: {self.ConfHW} performance decrease:{self.performance_decrease}, "
+                f"performance increase:{self.performance_increase}, base value:{self.base_value}"
+                f" Matrix:{self.matrix}")
