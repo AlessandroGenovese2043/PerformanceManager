@@ -28,7 +28,8 @@ def create_app():
                         logger.info(data_dict.get(f"API{i}")["version"])
                         api_version = data_dict.get(f"API{i}")["version"]
                         component_number = data_dict.get(f"API{i}")["component_number"]
-                        api = API(f"API{i}", api_version, component_number)
+                        endpoint = data_dict.get(f"API{i}")["endpoint"]
+                        api = API(f"API{i}", api_version, component_number, endpoint)
                         my_app.init_add_api(api)
                         for component in data_dict.get(f"API{i}")["component"]:
                             logger.info(component_dict)

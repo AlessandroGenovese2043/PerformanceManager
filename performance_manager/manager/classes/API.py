@@ -1,8 +1,9 @@
 class API:
-    def __init__(self, name, version, component_number):
+    def __init__(self, name, version, component_number, endpoint):
         self.name = name
         self.version = version
         self.component_number = component_number
+        self.endpoint = endpoint
         self.component_list = []
 
     def init_add_component(self, component):
