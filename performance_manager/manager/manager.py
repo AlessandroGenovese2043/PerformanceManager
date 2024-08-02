@@ -43,7 +43,12 @@ def create_app():
                             performance_decrease = component["performance_decrease"]
                             performance_increase = component["performance_increase"]
                             base_value = component["base_value"]
-                            component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease,performance_increase, base_value)
+                            logger.info("COMPONENT "+str(component))
+                            if "current_confHW" in component:
+                                current_confHW = component["current_confHW"]
+                            else:
+                                current_confHW = 0
+                            component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
                             component_dict[component_name] = component
                             api.init_add_component(component)
                     app_list_name.append(name)
@@ -60,6 +65,72 @@ def create_app():
         for app in my_apps:
             info_list.append(app.get_info())
         return info_list, 200
+
+    @app.route('/add_row', methods=['POST'])
+    def add_row():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    component_name = data_dict.get("component_name")
+                    if component_name not in component_dict:
+                        raise Exception("This component does not exist")
+                    component = component_dict[component_name]
+                    new_row = component.add_row()
+                    return f"New row added {new_row}, in component {component_name}", 200
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
+
+    @app.route('/add_column', methods=['POST'])
+    def add_column():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    component_name = data_dict.get("component_name")
+                    if component_name not in component_dict:
+                        raise Exception("This component does not exist")
+                    component = component_dict[component_name]
+                    new_column = component.add_column()
+                    return f"New column added {new_column}, in component {component_name}", 200
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
+
+    @app.route('/get_value_from_matrix', methods=['POST'])
+    def get_value_from_matrix():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    component_name = data_dict.get("component_name")
+                    if component_name not in component_dict:
+                        raise Exception("This component does not exist")
+                    component = component_dict[component_name]
+                    inputLevel = data_dict.get("inputLevel")
+                    if data_dict.get("confHW") is not None:
+                        confHW = data_dict.get("confHW")
+                        value = component.get_value_from_matrix(inputLevel, confHW)
+                        if value is None:
+                            raise Exception("InputLevel and/or confHW are not valid")
+                    else:
+                        value = component.get_value_from_matrix(inputLevel)
+                        if value is None:
+                            raise Exception("InputLevel is not valid")
+                    return f"Value {value}, in component {component_name}", 200
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
 
     return app
 # create Flask application
