@@ -11,6 +11,23 @@ class Component:
         self.currentConfHW = currentConfHW
         self.matrix = self.create_matrix()
 
+    def getName(self):
+        return self.name
+    def getInputMax(self):
+        return self.inputMax
+    def getConfHW(self):
+        return self.ConfHW
+    def getInputLevel(self):
+        return self.inputLevel
+    def getCurrentConfHW(self):
+        return self.currentConfHW
+    def getPerformanceIncrease(self):
+        return self.performance_increase
+    def getPerformanceDecrease(self):
+        return self.performance_decrease
+    def getBaseValue(self):
+        return self.base_value
+
     def setConfHW(self, targetConf):
         if targetConf > 0 & targetConf <= self.ConfHW:
             self.currentConfHW = targetConf
@@ -60,6 +77,7 @@ class Component:
             value = round(value / (1 + self.performance_increase), 9)
             new_row.append(value)
         self.matrix.append(new_row)
+        self.inputLevel += 1
         return new_row
 
     def add_column(self):
@@ -67,11 +85,12 @@ class Component:
         # first value
         value = round(self.matrix[0][self.ConfHW-1] / (1 + self.performance_increase), 9)
         new_column.append(value)
-        for i in range(1, self.ConfHW):
+        for i in range(1, self.inputLevel):
             value = round(value * (1 + self.performance_decrease), 9)
             new_column.append(value)
         for i in range(len(self.matrix)):
             self.matrix[i].append(new_column[i])
+        self.ConfHW += 1
         return new_column
 
 

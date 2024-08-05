@@ -121,11 +121,23 @@ def create_app():
                         confHW = data_dict.get("confHW")
                         value = component.get_value_from_matrix(inputLevel, confHW)
                         if value is None:
-                            raise Exception("InputLevel and/or confHW are not valid")
+                            # raise Exception("InputLevel and/or confHW are not valid")
+                            num = component.getBaseValue() * ((1 + component.performance_decrease) ** inputLevel)
+                            den = (1 + component.getPerformanceIncrease()) ** confHW
+                            simulate_value = num / den
+                            return (f"These inputLevel and confHW does not exist in the matrix of the component."
+                                    f"\nHowever, it is possible to simulate the value\n"
+                                    f"Value: {round(simulate_value,9)}")
                     else:
                         value = component.get_value_from_matrix(inputLevel)
                         if value is None:
-                            raise Exception("InputLevel is not valid")
+                            # raise Exception("InputLevel is not valid")
+                            num = component.getBaseValue() * ((1 + component.performance_decrease) ** inputLevel)
+                            den = (1 + component.getPerformanceIncrease()) ** component.getCurrentConfHW()
+                            simulate_value = num / den
+                            return (f"These inputLevel and confHW does not exist in the matrix of the component."
+                                    f"\nHowever, it is possible to simulate the value\n"
+                                    f"Value: {round(simulate_value,9)}")
                     return f"Value {value}, in component {component_name}", 200
             except Exception as e:
                 return f"Error in reading data: {str(e)}", 400
