@@ -232,6 +232,93 @@ def create_app():
         else:
             return "Error: the request must be in JSON format", 400
 
+    @app.route('/add_component', methods=['POST'])
+    def add_component():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    component_name = data_dict.get("name")
+                    if component_name in component_dict:
+                        raise Exception("This component already exist")
+                    inputMax = data_dict.get("inputMax")
+                    inputLevel = data_dict.get("inputLevel")
+                    confHW = data_dict.get("confHW")
+                    performance_decrease = data_dict.get("performance_decrease")
+                    performance_increase = data_dict.get("performance_increase")
+                    base_value = data_dict.get("base_value")
+                    if data_dict.get("current_confHW"):
+                        current_confHW = data_dict.get("current_confHW")
+                    else:
+                        current_confHW = 0
+                    component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
+                    component_dict[component_name] = component
+                    return (f"New component added: {component_name}"), 200
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
+
+    @app.route('/view_component', methods=['GET'])
+    def view_component():
+        info_list = []
+        for component in component_dict.values():
+            info_list.append(component.info())
+        return info_list, 200
+
+    @app.route('/add_api', methods=['POST'])
+    def add_api():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    application_name = data_dict.get("application_name")
+                    if application_name not in application_dict:
+                        raise Exception("This application_name does not exist")
+                    api_name = data_dict.get("api_name")
+                    application = application_dict[application_name]
+                    list = application.getApiList()
+                    for api in list:
+                        if api.getName() == api_name:
+                            raise Exception("This api already exist in that application")
+                    api_version = data_dict.get("version")
+                    component_number = data_dict.get("component_number")
+                    endpoint = data_dict.get("endpoint")
+                    component_weights = data_dict.get("weights")
+                    api = API(api_name, api_version, component_number, endpoint, component_weights)
+                    application.init_add_api(api)
+                    for component in data_dict.get("component"):
+                        component_name = component["name"]
+                        if component_name in component_dict:
+                            api.init_add_component(component_dict[component_name])
+                            continue
+                        inputMax = component["inputMax"]
+                        inputLevel = component["inputLevel"]
+                        confHW = component["confHW"]
+                        performance_decrease = component["performance_decrease"]
+                        performance_increase = component["performance_increase"]
+                        base_value = component["base_value"]
+                        logger.info("COMPONENT "+str(component))
+                        if "current_confHW" in component:
+                            current_confHW = component["current_confHW"]
+                        else:
+                            current_confHW = 0
+                        component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
+                        component_dict[component_name] = component
+                        api.init_add_component(component)
+                    return f"Added new API:{api_name}"
+
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
+
+
+
     return app
 # create Flask application
 app = create_app()
