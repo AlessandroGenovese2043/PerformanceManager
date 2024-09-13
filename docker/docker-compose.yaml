@@ -1,0 +1,90 @@
+version: '3.6'
+
+services:
+
+  simulator_service:
+    container_name: simulator-service
+    build:
+      context: ../performance_manager
+      dockerfile: Dockerfile
+    image: simulator_service_image:base
+    ports:
+      - "8080:8080"
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-service
+    restart: always
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus.rules:/etc/prometheus/prometheus.rules
+
+  pushgateway:
+    container_name: pushgateway
+    image: prom/pushgateway
+    ports:
+      - "9091:9091"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.46.0
+    container_name: mycadvisor
+    restart: always
+    ports:
+      - '8082:8080'
+    command:
+      - '--docker_only=true'
+      - '--housekeeping_interval=15s'
+    privileged: true
+    # cpus: 1
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      #- /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
+    labels:
+      org.label-schema.group: "monitoring"
+
+  locust-exporter:
+    image: containersol/locust_exporter:latest
+    ports:
+      - "9646:9646"
+    environment:
+      - LOCUST_EXPORTER_URI=http://loadgen:8089
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  loadgen:
+    container_name: loadgen-service
+    build:
+      context: ../performance_manager/manager/utils/load-gen
+      dockerfile: Dockerfile
+    image: loadgen_service_image:base
+    ports:
+      - "8089:8089"
+    environment:
+      - PORT=8080
+      - TARGET_ADDR=simulator-service:8080
+
+volumes:
+  grafana_data: {}
+  prometheus_data:
+
+

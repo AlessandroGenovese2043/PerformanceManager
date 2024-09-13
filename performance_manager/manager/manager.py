@@ -1,16 +1,30 @@
-from flask import Flask, request
+from flask import Flask, request, Response
 
 from classes.API import API
 from classes.application import Application
 from classes.component import Component
 from utils.logger import logger
+from prometheus_client import Counter, generate_latest, REGISTRY, Gauge, CollectorRegistry, push_to_gateway
+
+registry = CollectorRegistry()
+API_RESPONSE_TIME = Gauge('API_Response_time', 'API Response time obtained from simulator', ['API'], registry=registry)
+COMPONENT_RESPONSE_TIME = Gauge('Component_Response_time', 'Component Response time obtained from simulator',
+                                ['name', 'confHW'], registry=registry)
 
 my_apps = []
 app_list_name = []
 application_dict = dict()
 component_dict = dict()
+
+
 def create_app():
     app = Flask(__name__)
+
+    @app.route('/metrics')
+    def metrics():
+        # Export all the metrics as text for Prometheus
+        return Response(generate_latest(REGISTRY), mimetype='text/plain')
+
     @app.route('/create_app', methods=['POST'])
     def create():
         if request.is_json:
@@ -45,12 +59,13 @@ def create_app():
                             performance_decrease = component["performance_decrease"]
                             performance_increase = component["performance_increase"]
                             base_value = component["base_value"]
-                            logger.info("COMPONENT "+str(component))
+                            logger.info("COMPONENT " + str(component))
                             if "current_confHW" in component:
                                 current_confHW = component["current_confHW"]
                             else:
                                 current_confHW = 0
-                            component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
+                            component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease,
+                                                  performance_increase, base_value, current_confHW)
                             component_dict[component_name] = component
                             api.init_add_component(component)
                     app_list_name.append(name)
@@ -130,7 +145,7 @@ def create_app():
                             simulate_value = num / den
                             return (f"These inputLevel and confHW does not exist in the matrix of the component."
                                     f"\nHowever, it is possible to simulate the value\n"
-                                    f"Value: {round(simulate_value,9)} ms")
+                                    f"Value: {round(simulate_value, 9)} ms")
                     else:
                         value = component.get_value_from_matrix(inputLevel)
                         if value is None:
@@ -140,8 +155,8 @@ def create_app():
                             simulate_value = num / den
                             return (f"These inputLevel and confHW does not exist in the matrix of the component."
                                     f"\nHowever, it is possible to simulate the value\n"
-                                    f"Value: {round(simulate_value,9)} ms")
-                    return f"Value {round(value,9)} ms, in component {component_name}", 200
+                                    f"Value: {round(simulate_value, 9)} ms")
+                    return f"Value {round(value, 9)} ms, in component {component_name}", 200
             except Exception as e:
                 return f"Error in reading data: {str(e)}", 400
         else:
@@ -185,23 +200,31 @@ def create_app():
                                         f"Value: {round(simulate_value,9)}")
                                 '''
                             logger.info(f"Component:{component.getName()}, value:{value}")
-                            weighted_value = value*api.getComponentWeights()[i]
+                            COMPONENT_RESPONSE_TIME.labels(name=component.getName(), confHW=confHW).set(value)
+                            push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
+                            weighted_value = value * api.getComponentWeights()[i]
                             sum += weighted_value
                             logger.info(f"Component:{component.getName()}, weighted_value:{weighted_value}, i: {i}")
                             i += 1
                     else:
                         for component in component_list:
+                            confHW = component.getCurrentConfHW()
                             value = component.get_value_from_matrix(inputLevel)
                             if value is None:
                                 num = component.getBaseValue() * ((1 + component.performance_decrease) ** inputLevel)
                                 den = (1 + component.getPerformanceIncrease()) ** component.getCurrentConfHW()
                                 value = num / den
                             logger.info(f"Component:{component.getName()}, value:{value}")
-                            weighted_value = value*api.getComponentWeights()[i]
+                            COMPONENT_RESPONSE_TIME.labels(name=component.getName(),confHW=confHW).set(value)
+                            push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
+                            weighted_value = value * api.getComponentWeights()[i]
                             sum += weighted_value
                             logger.info(f"Component:{component.getName()}, weighted_value:{weighted_value}, i: {i}")
                             i += 1
-                    return (f"Value {round(sum,9)} ms, in API: {api_name} application: {application_name}, "
+                    logger.info(f"Value:{sum}")
+                    API_RESPONSE_TIME.labels(API=api_name).set(sum)
+                    push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
+                    return (f"Value {round(sum, 9)} ms, in API: {api_name} application: {application_name}, "
                             f"component_weights: {api.getComponentWeights()}"), 200
             except Exception as e:
                 return f"Error in reading data: {str(e)}", 400
@@ -253,7 +276,8 @@ def create_app():
                         current_confHW = data_dict.get("current_confHW")
                     else:
                         current_confHW = 0
-                    component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
+                    component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease,
+                                          performance_increase, base_value, current_confHW)
                     component_dict[component_name] = component
                     return (f"New component added: {component_name}"), 200
             except Exception as e:
@@ -302,12 +326,13 @@ def create_app():
                         performance_decrease = component["performance_decrease"]
                         performance_increase = component["performance_increase"]
                         base_value = component["base_value"]
-                        logger.info("COMPONENT "+str(component))
+                        logger.info("COMPONENT " + str(component))
                         if "current_confHW" in component:
                             current_confHW = component["current_confHW"]
                         else:
                             current_confHW = 0
-                        component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease, performance_increase, base_value, current_confHW)
+                        component = Component(component_name, inputMax, inputLevel, confHW, performance_decrease,
+                                              performance_increase, base_value, current_confHW)
                         component_dict[component_name] = component
                         api.init_add_component(component)
                     return f"Added new API:{api_name}"
@@ -317,12 +342,11 @@ def create_app():
         else:
             return "Error: the request must be in JSON format", 400
 
-
-
     return app
+
+
 # create Flask application
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
+    app.run(host='0.0.0.0', port=8080)
