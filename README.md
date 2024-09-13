@@ -61,6 +61,8 @@ Before querying the simulator you need to create at least one application.
          "api_name": "API1",
          "inputLevel" : 1,
          "confHW": 2 // it is possible to omit it in this case the current configuration of the component will be used
+          //If you use the key “confHW” all application components will be tried with that confHW
+          //If you want to change differently the configuration of the individual component use the "set_ConfHW" endpoint
       }
 
 - /set_confHW
