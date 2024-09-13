@@ -50,6 +50,8 @@ Before querying the simulator you need to create at least one application.
               "performance_decrease": 20,
               "performance_increase": 25,
               "base_value": 9
+               // "current_confHW" if not specified by default is 0
+
             }
           ]
         }
@@ -60,9 +62,13 @@ Before querying the simulator you need to create at least one application.
          "application_name" : "APP3",
          "api_name": "API1",
          "inputLevel" : 1,
-         "confHW": 2 // it is possible to omit it in this case the current configuration of the component will be used
-          //If you use the key “confHW” all application components will be tried with that confHW
-          //If you want to change differently the configuration of the individual component use the "set_ConfHW" endpoint
+         "confHW": [2,0] // it is possible to omit it in this case the current configuration of the component will be used
+          //array with component configurations, should be sorted according to the order of component definition made when creating the API
+          //In the example API1 was defined by first inserting component 1 and then component 2
+          //so the first element of the vector will refer to the desired configuration for component 1
+          //while the second value of the vector refers to the desired configuration for component 2
+          //In this way it is possible to simulate the behavior of the application 
+          //by testing the various components each with the desired configuration
       }
 
 - /set_confHW

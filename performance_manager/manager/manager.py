@@ -187,12 +187,13 @@ def create_app():
                     sum = 0
                     if data_dict.get("confHW") is not None:
                         confHW = data_dict.get("confHW")
+                        i = 0
                         for component in component_list:
-                            value = component.get_value_from_matrix(inputLevel, confHW)
+                            value = component.get_value_from_matrix(inputLevel, confHW[i])
                             if value is None:
                                 # raise Exception("InputLevel and/or confHW are not valid")
                                 num = component.getBaseValue() * ((1 + component.performance_decrease) ** inputLevel)
-                                den = (1 + component.getPerformanceIncrease()) ** confHW
+                                den = (1 + component.getPerformanceIncrease()) ** confHW[i]
                                 value = num / den
                                 '''
                                 return (f"These inputLevel and confHW does not exist in the matrix of the component."
@@ -200,7 +201,7 @@ def create_app():
                                         f"Value: {round(simulate_value,9)}")
                                 '''
                             logger.info(f"Component:{component.getName()}, value:{value}")
-                            COMPONENT_RESPONSE_TIME.labels(name=component.getName(), confHW=confHW).set(value)
+                            COMPONENT_RESPONSE_TIME.labels(name=component.getName(), confHW=confHW[i]).set(value)
                             push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
                             weighted_value = value * api.getComponentWeights()[i]
                             sum += weighted_value
