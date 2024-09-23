@@ -29,7 +29,7 @@ class Component:
         return self.base_value
 
     def setConfHW(self, targetConf):
-        if targetConf > 0 & targetConf <= self.ConfHW:
+        if targetConf >= 0 & targetConf <= self.ConfHW:
             self.currentConfHW = targetConf
             return 1
         else:
