@@ -50,6 +50,33 @@ def set_new_confhw(component):
         print(f"Connection error: {e}")
     return False
 
+def set_new_confhwper2(component):
+    new_confURL = "http://localhost:8080/set_confHW"
+    data = {
+        "component_name": component
+    }
+    try:
+        response = requests.post(new_confURL, json=data)
+        if response.status_code == 200:
+            result = response.text
+            match = re.search(r"Current HW configuration: ([\d.]+)", result)
+            if match:
+                currentHW = int(match.group(1))
+                currentHW += 2
+                new_data = {
+                    "component_name": component,
+                    "confHW": currentHW
+                }
+                response = requests.post(new_confURL, json=new_data)
+                if response.status_code == 200:
+                    return currentHW
+            else:
+                print(f"Pattern not found: {result}")
+        else:
+            print(f"Error in the request: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Connection error: {e}")
+    return False
 
 def create_load_curve(n_samples, frequency, amplitude):
     # Create x-axis from 0 to n_samples
@@ -202,6 +229,64 @@ if __name__ == '__main__':
     control_results_df.to_csv('Control_output_with_timestamp_and_SLO.csv', index=False)
 
     plt.plot(control_results_df['timestamp'], control_results_df['response'])
+    plt.axhline(y=SLO, color='red', linestyle='--', label='SLO')
+    plt.xlabel('Timestamp')
+    plt.xticks(rotation=45)
+    plt.ylabel('Response time (ms)')
+    plt.title('Graph between timestamps and response time with control')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    reset_conf("component1")
+
+
+
+    # Control 2
+
+    control2_data_list = []
+    for i in range(len(step_function)):
+        # Prepares JSON data to be sent to the server
+        data = {
+            "application_name": application_name,
+            "api_name": api_name,
+            "inputLevel": int(step_function[i])
+        }
+
+        try:
+            response = requests.post(url, json=data)
+            if response.status_code == 200:
+                result = response.text
+                match = re.search(r"Value ([\d.]+) ms", result)
+                if match:
+                    time_ms = match.group(1)
+                    control2_data_list.append({
+                        "inputLevel": data["inputLevel"],
+                        "response": float(time_ms)
+                    })
+                    if float(time_ms) > SLO:
+                        result = set_new_confhwper2(component_name)
+                        if result > 0:
+                            print(f"New Configuration setted: {result}")
+                else:
+                    print(f"Pattern not found: {result}")
+            else:
+                print(f"Error in the request for inputLevel {data['inputLevel']}: {response.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Connection error: {e}")
+
+    control2_results_df = pd.DataFrame(control2_data_list)
+    print(control2_results_df)
+    control2_results_df.to_csv('Control2_output.csv')
+
+    start_time = pd.Timestamp('2023-09-17 00:00:00')
+    timestamps = pd.date_range(start=start_time, periods=len(control2_results_df), freq='min')
+    control2_results_df['SLO'] = SLO
+    control2_results_df['timestamp'] = timestamps
+    control2_results_df.to_csv('Control2_output_with_timestamp_and_SLO.csv', index=False)
+
+    plt.plot(control2_results_df['timestamp'], control2_results_df['response'])
     plt.axhline(y=SLO, color='red', linestyle='--', label='SLO')
     plt.xlabel('Timestamp')
     plt.xticks(rotation=45)
