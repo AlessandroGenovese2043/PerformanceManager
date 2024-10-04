@@ -9,3 +9,6 @@ monitor_service/venv_monitor
 analysis_service/venv_analysis
 planning_service/venv_planning
 execute_service/venv_execute
+
+#Extra
+*.iml
