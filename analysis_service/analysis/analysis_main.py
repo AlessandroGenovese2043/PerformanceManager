@@ -1,7 +1,5 @@
 import json
-
 import sys
-
 import confluent_kafka
 from utils.logger import logger
 from confluent_kafka.admin import AdminClient, NewTopic
@@ -43,14 +41,12 @@ def produce_kafka_message(topic_name, kafka_producer, message):
 
 
 def report_violation(data):
-    pass
+    logger.info("VIOLATION SLA!")
 
 
 if __name__ == "__main__":
 
     SLO = 20
-    component_name = "component1"
-
     # Kafka admin and producer initialization in order to publish in topic "metrics_to_analyze"
     broker = 'kafka-service:9092'
     topic = 'planning'
@@ -69,7 +65,7 @@ if __name__ == "__main__":
     for name in topic_names:
         if name == topic:
             found = True
-    if found == False:
+    if found is False:
         new_topic = NewTopic(topic, 2, 1)  # Number-of-partitions = 2, Number-of-replicas = 1
         kadmin.create_topics([new_topic, ])
 
@@ -81,7 +77,7 @@ if __name__ == "__main__":
         {'bootstrap.servers': 'kafka-service:9092', 'group.id': 'group1', 'enable.auto.commit': 'false',
          'auto.offset.reset': 'latest', 'on_commit': commit_completed})
     try:
-        consumer_kafka.subscribe(['metric_update'])
+        consumer_kafka.subscribe(['metrics_to_analyze'])
         # the analysis_service is also a Consumer related to the monitor_service Producer
     except confluent_kafka.KafkaException as ke:
         logger.error("Kafka exception raised! -> " + str(ke) + "\n")
@@ -115,8 +111,8 @@ if __name__ == "__main__":
                 RT = data.get("RT")
                 if RT > SLO:
                     # violation occurred
-                    report_violation(data)
-
+                    logger.info(f"VIOLATION SLA, RT: {RT} con SLO: {SLO}")
+                    produce_kafka_message(topic, producer_kafka, record_value)
 
                 # make commit
                 try:

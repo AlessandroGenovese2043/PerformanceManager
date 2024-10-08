@@ -62,7 +62,7 @@ if __name__ == "__main__":
     for name in topic_names:
         if name == topic:
             found = True
-    if found == False:
+    if found is False:
         new_topic = NewTopic(topic, 2, 1)  # Number-of-partitions = 2, Number-of-replicas = 1
         kadmin.create_topics([new_topic, ])
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
                 transform_data(data)  # TODO: trasformazione dati fase di monitoring
 
-                while produce_kafka_message(topic, producer_kafka, record_value) == False:
+                while not produce_kafka_message(topic, producer_kafka, record_value):
                     pass
 
                 # make commit

@@ -4,17 +4,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import requests
-import re
 from utils.logger import logger
 import confluent_kafka
 from confluent_kafka.admin import AdminClient, NewTopic
 import time
 
 
-def produce_kafka_message(topic_name, kafka_producer, message):
+def produce_kafka_message(topic_name, kafka_producer, message_to_sent):
     # Publish on the specific topic
     try:
-        kafka_producer.produce(topic_name, value=message)
+        kafka_producer.produce(topic_name, value=message_to_sent)
     except BufferError:
         logger.error(
             '%% Local producer queue is full (%d messages awaiting delivery): try again\n' % len(kafka_producer))
@@ -54,8 +53,8 @@ if __name__ == '__main__':
     for name in topic_names:
         if name == topic:
             found = True
-    if found == False:
-        new_topic = NewTopic(topic, 6, 1)  # Number-of-partitions = 1, Number-of-replicas = 1
+    if found is False:
+        new_topic = NewTopic(topic, 2, 1)  # Number-of-partitions = 1, Number-of-replicas = 1
         kadmin.create_topics([new_topic, ])
 
     # Create Producer instance
@@ -109,6 +108,7 @@ if __name__ == '__main__':
         try:
             response = requests.post(url, json=data)
             if response.status_code == 200:
+                '''
                 result = response.text
                 match = re.search(r"Value ([\d.]+) ms", result)
                 if match:
@@ -117,15 +117,20 @@ if __name__ == '__main__':
                         "inputLevel": data["inputLevel"],
                         "response": float(time_ms)
                     })
-                    message = dict()
-                    message["inputLevel"] = data["inputLevel"]
-                    message["RT"] = float(time_ms)
-                    json_message = json.dumps(message)
-                    logger.info(f"JSON_MESSAGE:{json_message}")
-                    produce_kafka_message(topic, producer_kafka, json_message)
-                    logger.info("Produced message to Kafka")
-                else:
-                    print(f"Pattern not found: {result}")
+                '''
+                result = response.json()
+                message = dict()
+                message["application_name"] = data["application_name"]
+                message["api_name"] = data["api_name"]
+                message["inputLevel"] = data["inputLevel"]
+                message["RT"] = float(result["time_ms"])
+                message["component_name"] = result["principal_component"]
+                json_message = json.dumps(message)
+                logger.info(f"JSON_MESSAGE:{json_message}")
+                produce_kafka_message(topic, producer_kafka, json_message)
+                logger.info("Produced message to Kafka")
+                #  else:
+                #   print(f"Pattern not found: {result}")
             else:
                 print(f"Error in the request for inputLevel {data['inputLevel']}: {response.status_code}")
 

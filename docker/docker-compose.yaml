@@ -134,6 +134,36 @@ services:
       - kafka
     restart: always
 
+  analysis_service:
+    container_name: analysis-service
+    build:
+      context: ../analysis_service
+      dockerfile: Dockerfile
+    image: analysis_service_image:base
+    depends_on:
+      - kafka
+    restart: always
+
+  planning_service:
+    container_name: planning-service
+    build:
+      context: ../planning_service
+      dockerfile: Dockerfile
+    image: planning_service_image:base
+    depends_on:
+      - kafka
+    restart: always
+
+  execute_service:
+    container_name: execute-service
+    build:
+      context: ../execute_service
+      dockerfile: Dockerfile
+    image: execute_service_image:base
+    depends_on:
+      - kafka
+    restart: always
+
 volumes:
   grafana_data: {}
   prometheus_data:

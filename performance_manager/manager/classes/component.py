@@ -1,3 +1,6 @@
+import json
+
+
 class Component:
     def __init__(self, name, inputMax=100, inputLevel=1, ConfHW=1, performance_decrease=20, performance_increase=25,
                  base_value=1, currentConfHW=0, ):
@@ -105,3 +108,20 @@ class Component:
             f"Component: {self.name}, InputMax: {self.inputMax}, InputLevel: {self.inputLevel}, ConfHW: {self.ConfHW} performance decrease:{self.performance_decrease}, "
             f"performance increase:{self.performance_increase}, base value:{self.base_value}, currentConfHW:{self.currentConfHW}"
             f" Matrix:{self.matrix}")
+
+    import json
+
+    def json_info(self):
+        data = {
+            "Component": self.name,
+            "InputMax": self.inputMax,
+            "InputLevel": self.inputLevel,
+            "ConfHWMax": self.ConfHW,
+            "PerformanceDecrease": self.performance_decrease,
+            "PerformanceIncrease": self.performance_increase,
+            "BaseValue": self.base_value,
+            "CurrentConfHW": self.currentConfHW,
+            "Matrix": self.matrix
+        }
+        return json.dumps(data)
+

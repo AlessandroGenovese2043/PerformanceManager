@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request, Response
 
 from classes.API import API
@@ -225,8 +227,16 @@ def create_app():
                     logger.info(f"Value:{sum}")
                     API_RESPONSE_TIME.labels(API=api_name).set(sum)
                     push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
-                    return (f"Value {round(sum, 9)} ms, in API: {api_name} application: {application_name}, "
-                            f"component_weights: {api.getComponentWeights()}"), 200
+                    # return (f"Value {round(sum, 9)} ms, in API: {api_name} application: {application_name}, "
+                    #        f"component_weights: {api.getComponentWeights()}"), 200
+                    response_data = {
+                        "value": round(sum, 9),
+                        "api_name": api_name,
+                        "application_name": application_name,
+                        "component_weights": api.getComponentWeights(),
+                        "principal_component": api.getPrincipalComponent()
+                    }
+                    return json.dumps(response_data), 200
             except Exception as e:
                 return f"Error in reading data: {str(e)}", 400
         else:
@@ -286,12 +296,31 @@ def create_app():
         else:
             return "Error: the request must be in JSON format", 400
 
-    @app.route('/view_component', methods=['GET'])
-    def view_component():
+    @app.route('/view_components', methods=['GET'])
+    def view_components():
         info_list = []
         for component in component_dict.values():
             info_list.append(component.info())
         return info_list, 200
+
+    @app.route('/view_component', methods=['POST'])
+    def view_component():
+        if request.is_json:
+            try:
+                # Extract json data
+                data_dict = request.get_json()
+                logger.info("Data received:" + str(data_dict))
+                if data_dict:
+                    component_name = data_dict.get("component_name")
+                    if component_name in component_dict.keys():
+                        component = component_dict["component_name"]
+                        return component.json_info(), 200
+                    else:
+                        return f"Error: there is no component with name: {component_name}", 400
+            except Exception as e:
+                return f"Error in reading data: {str(e)}", 400
+        else:
+            return "Error: the request must be in JSON format", 400
 
     @app.route('/add_api', methods=['POST'])
     def add_api():
