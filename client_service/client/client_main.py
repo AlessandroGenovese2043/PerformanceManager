@@ -119,7 +119,7 @@ if __name__ == '__main__':
                     })
                     message = dict()
                     message["inputLevel"] = data["inputLevel"]
-                    message["response"] = float(time_ms)
+                    message["RT"] = float(time_ms)
                     json_message = json.dumps(message)
                     logger.info(f"JSON_MESSAGE:{json_message}")
                     produce_kafka_message(topic, producer_kafka, json_message)

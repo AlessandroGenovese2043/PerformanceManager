@@ -114,6 +114,26 @@ services:
       - kafka_secrets_volume:/etc/kafka/secrets
       - kafka_data_volume:/var/lib/kafka/data
 
+  client_service:
+    container_name: client-service
+    build:
+      context: ../client_service
+      dockerfile: Dockerfile
+    image: client_service_image:base
+    depends_on:
+      - kafka
+    restart: always
+
+  monitor_service:
+    container_name: monitor-service
+    build:
+      context: ../monitor_service
+      dockerfile: Dockerfile
+    image: monitor_service_image:base
+    depends_on:
+      - kafka
+    restart: always
+
 volumes:
   grafana_data: {}
   prometheus_data:
