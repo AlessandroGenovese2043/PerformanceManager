@@ -1,11 +1,12 @@
-FROM python:3
+FROM python:3.10
 
 WORKDIR /app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY utils .
-COPY analysis/analysis_main.py.py .
+COPY . .
+ENV PYTHONPATH=/app
+WORKDIR /app
 
-CMD [ "python", "analysis_main.py" ]
+CMD [ "python", "analysis/analysis_main.py" ]

@@ -21,13 +21,21 @@ class API:
     def getComponentNumber(self):
         return self.component_number
     def getPrincipalComponent(self):
-        combined = zip(self.component_list, self.component_weights)
+        list = self.getListComponentName()
+        combined = zip(list, self.component_weights)
 
         max_pair = max(combined, key=lambda x: x[1])
         return max_pair[0]  # return the component with the highest weights
 
     def getComponentWeights(self):
         return self.component_weights
+
+    def getListComponentName(self):
+        list = []
+        for component in self.component_list:
+            list.append(component.getName())
+        return list
+
     def getComponentList(self):
         return self.component_list
     def getEndpoint(self):

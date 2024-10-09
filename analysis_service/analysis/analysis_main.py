@@ -1,4 +1,6 @@
 import json
+import time
+
 import sys
 import confluent_kafka
 from utils.logger import logger
@@ -86,7 +88,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # polling messages in Kafka topic "event_update"
+            # polling messages in Kafka topic
             msg = consumer_kafka.poll(timeout=5.0)
             if msg is None:
                 # No message available within timeout.
@@ -120,6 +122,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     logger.error("Error in commit! -> " + str(e) + "\n")
                     raise SystemExit
+            time.sleep(0.030)
     except (KeyboardInterrupt, SystemExit):  # to terminate correctly with either CTRL+C or docker stop
         pass
     finally:

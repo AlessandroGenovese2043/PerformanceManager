@@ -8,7 +8,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 
 
 def set_new_confhw(component, confHW):
-    url = "http://localhost:8080/set_confHW"
+    url = "http://simulator-service:8080/set_confHW"
     data = {
         "component_name": component,
         "confHW": confHW
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # polling messages in Kafka topic "event_update"
+            # polling messages in Kafka topic
             msg = consumer_kafka.poll(timeout=5.0)
             if msg is None:
                 # No message available within timeout.
@@ -105,7 +105,7 @@ if __name__ == "__main__":
                 logger.info("DATA: " + str(data))
                 # execute
                 newHWConfiguration = data["action_confHW"]
-                component_name = data["component_name"]
+                component_name = data["principal_component"]
 
                 # action of control
                 set_new_confhw(component_name, newHWConfiguration)

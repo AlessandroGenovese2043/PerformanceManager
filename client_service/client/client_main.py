@@ -10,6 +10,21 @@ from confluent_kafka.admin import AdminClient, NewTopic
 import time
 
 
+def reset_conf(component_name):
+    reset_data = {
+        "component_name": component_name,
+        "confHW": 0
+    }
+    try:
+        reset_response = requests.post("http://simulator-service:8080/set_confHW", json=reset_data)
+        if reset_response.status_code == 200:
+            return True
+        else:
+            logger.info(f"Error in the request: {reset_response.status_code}")
+    except requests.exceptions.RequestException as e:
+        logger.info(f"Connection error: {e}")
+    return False
+
 def produce_kafka_message(topic_name, kafka_producer, message_to_sent):
     # Publish on the specific topic
     try:
@@ -67,7 +82,7 @@ if __name__ == '__main__':
     plt.xlabel("Sample")
     plt.ylabel("Value")
     plt.grid(True)
-    plt.show()
+    plt.savefig('./plotLoadCurve.png')
 
     step_function = np.floor(y_values / 100)
 
@@ -80,7 +95,7 @@ if __name__ == '__main__':
     plt.ylabel("Value")
     plt.grid(True)
     plt.legend()
-    plt.show()
+    plt.savefig('./plotOriginalAndStep.png')
 
     plt.plot(x_values, step_function, label="Step Function")
     plt.title("Step function")
@@ -88,15 +103,17 @@ if __name__ == '__main__':
     plt.ylabel("Value")
     plt.grid(True)
     plt.legend()
-    plt.show()
+    plt.savefig('./plotStep.png')
 
-    url = "http://localhost:8080/get_value_from_API"
+    url = "http://simulator-service:8080/get_value_from_API"
     results_df = pd.DataFrame(columns=["inputLevel", "response"])
     application_name = "APP3"
     api_name = "API0"
     data_list = []
     SLO = 20
     component_name = "component1"
+
+    time.sleep(5)
 
     for i in range(len(step_function)):
         # Prepares JSON data to be sent to the server
@@ -123,19 +140,25 @@ if __name__ == '__main__':
                 message["application_name"] = data["application_name"]
                 message["api_name"] = data["api_name"]
                 message["inputLevel"] = data["inputLevel"]
-                message["RT"] = float(result["time_ms"])
-                message["component_name"] = result["principal_component"]
+                message["RT"] = float(result["RT"])
+                component_name = result["principal_component"]
+                message["principal_component"] = result["principal_component"]
+                message["confHW"] = result["confHW"]
                 json_message = json.dumps(message)
                 logger.info(f"JSON_MESSAGE:{json_message}")
                 produce_kafka_message(topic, producer_kafka, json_message)
                 logger.info("Produced message to Kafka")
+                data_list.append({
+                    "inputLevel": data["inputLevel"],
+                    "response": float(result["RT"])
+                })
                 #  else:
                 #   print(f"Pattern not found: {result}")
             else:
-                print(f"Error in the request for inputLevel {data['inputLevel']}: {response.status_code}")
+                logger.info(f"Error in the request for inputLevel {data['inputLevel']}: {response.status_code} + {response}")
 
         except requests.exceptions.RequestException as e:
-            print(f"Connection error: {e}")
+            logger.info(f"Connection error: {e}")
 
         time.sleep(0.015)  # 15 ms
 
@@ -147,9 +170,9 @@ if __name__ == '__main__':
     plt.plot(results_df['inputLevel'], results_df['response'])
     plt.xlabel('Input Level')
     plt.ylabel('Response')
-    plt.title('Graph between Input Level and Response without control')
+    plt.title('Graph between Input Level and Response with control')
     plt.grid(True)
-    plt.show()
+    plt.savefig('./plot1.png')
 
     start_time = pd.Timestamp('2023-09-17 00:00:00')
     timestamps = pd.date_range(start=start_time, periods=len(results_df), freq='min')
@@ -162,7 +185,9 @@ if __name__ == '__main__':
     plt.xlabel('Timestamp')
     plt.xticks(rotation=45)
     plt.ylabel('Response time (ms)')
-    plt.title('Graph between timestamps and response time without control')
+    plt.title('Graph between timestamps and response time with control')
     plt.grid(True)
     plt.legend()
-    plt.show()
+    plt.savefig('./plot2.png')
+
+    reset_conf(component_name)

@@ -122,7 +122,6 @@ services:
     image: client_service_image:base
     depends_on:
       - kafka
-    restart: always
 
   monitor_service:
     container_name: monitor-service

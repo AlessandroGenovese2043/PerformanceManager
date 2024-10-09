@@ -8,7 +8,7 @@ import re
 
 
 def getMax_conf_hw(component):
-    url = "http://localhost:8080/view_component"
+    url = "http://simulator-service:8080/view_component"
     data = {
         "component_name": component
     }
@@ -16,8 +16,8 @@ def getMax_conf_hw(component):
         response = requests.post(url, json=data)
         if response.status_code == 200:
             result = response.json()
-            if 'confHWMax' in result:
-                return result['confHWMax']
+            if 'ConfHWMax' in result:
+                return result['ConfHWMax']
             else:
                 logger.info(f"Pattern not found: {result}")
         else:
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # polling messages in Kafka topic "event_update"
+            # polling messages in Kafka topic
             msg = consumer_kafka.poll(timeout=5.0)
             if msg is None:
                 # No message available within timeout.

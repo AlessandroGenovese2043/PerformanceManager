@@ -1,11 +1,12 @@
-FROM python:3
+FROM python:3.10
 
 WORKDIR /app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY utils .
-COPY client/client_main.py .
+COPY . .
+ENV PYTHONPATH=/app
+WORKDIR /app
 
-CMD [ "python", "client_main.py" ]
+CMD [ "python", "client/client_main.py" ]

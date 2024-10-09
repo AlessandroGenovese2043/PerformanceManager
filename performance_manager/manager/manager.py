@@ -229,12 +229,17 @@ def create_app():
                     push_to_gateway('pushgateway:9091', job='simulator', registry=registry)
                     # return (f"Value {round(sum, 9)} ms, in API: {api_name} application: {application_name}, "
                     #        f"component_weights: {api.getComponentWeights()}"), 200
+                    list_weights = api.getComponentWeights()
+                    principal_component = api.getPrincipalComponent()
+                    var = component_dict[principal_component]
+                    confHW = var.getCurrentConfHW()
                     response_data = {
-                        "value": round(sum, 9),
+                        "RT": round(sum, 9),
                         "api_name": api_name,
                         "application_name": application_name,
-                        "component_weights": api.getComponentWeights(),
-                        "principal_component": api.getPrincipalComponent()
+                        "component_weights": list_weights,
+                        "principal_component": principal_component,
+                        "confHW": confHW
                     }
                     return json.dumps(response_data), 200
             except Exception as e:
@@ -313,7 +318,7 @@ def create_app():
                 if data_dict:
                     component_name = data_dict.get("component_name")
                     if component_name in component_dict.keys():
-                        component = component_dict["component_name"]
+                        component = component_dict[component_name]
                         return component.json_info(), 200
                     else:
                         return f"Error: there is no component with name: {component_name}", 400
