@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # Create Producer instance
     producer_kafka = confluent_kafka.Producer(**producer_conf)
 
-    x_values, y_values = create_load_curve(2500, 15, 30)
+    x_values, y_values = create_load_curve(1500, 15, 30)
     plt.figure(figsize=(10, 6))
     plt.plot(x_values, y_values)
     plt.title("Load curve with increasing trend and oscillations")
@@ -111,8 +111,6 @@ if __name__ == '__main__':
     api_name = "API0"
     data_list = []
     SLO = 20
-    component_name = "component1"
-
     time.sleep(5)
 
     for i in range(len(step_function)):
@@ -150,17 +148,19 @@ if __name__ == '__main__':
                 logger.info("Produced message to Kafka")
                 data_list.append({
                     "inputLevel": data["inputLevel"],
-                    "response": float(result["RT"])
+                    "response": float(result["RT"]),
+                    "confHW": result["confHW"]
+
                 })
                 #  else:
                 #   print(f"Pattern not found: {result}")
+                time.sleep(0.015)
             else:
                 logger.info(f"Error in the request for inputLevel {data['inputLevel']}: {response.status_code} + {response}")
 
         except requests.exceptions.RequestException as e:
             logger.info(f"Connection error: {e}")
 
-        time.sleep(0.015)  # 15 ms
 
     results_df = pd.DataFrame(data_list)
     print(results_df)
@@ -178,6 +178,8 @@ if __name__ == '__main__':
     timestamps = pd.date_range(start=start_time, periods=len(results_df), freq='min')
     results_df['SLO'] = SLO
     results_df['timestamp'] = timestamps
+    # results_df = results_df.set_index('timestamp')
+    print(results_df)
     results_df.to_csv('output_with_timestamp_and_SLO.csv', index=False)
 
     plt.plot(results_df['timestamp'], results_df['response'], label='confHW0')

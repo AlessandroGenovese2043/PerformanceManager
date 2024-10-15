@@ -122,7 +122,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     logger.error("Error in commit! -> " + str(e) + "\n")
                     raise SystemExit
-            time.sleep(0.030)
+                # time.sleep(0.05)
     except (KeyboardInterrupt, SystemExit):  # to terminate correctly with either CTRL+C or docker stop
         pass
     finally:

@@ -1,11 +1,32 @@
 import json
 import sys
+import time
+
 import requests
 import confluent_kafka
 from utils.logger import logger
 from confluent_kafka.admin import AdminClient, NewTopic
 import re
 
+
+def getCurrent_conf_hw(component):
+    url = "http://simulator-service:8080/view_component"
+    data = {
+        "component_name": component
+    }
+    try:
+        response = requests.post(url, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            if 'CurrentConfHW' in result:
+                return result['CurrentConfHW']
+            else:
+                logger.info(f"Pattern not found: {result}")
+        else:
+            logger.info(f"Error in the request: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        logger.info(f"Connection error: {e}")
+    return False
 
 def getMax_conf_hw(component):
     url = "http://simulator-service:8080/view_component"
@@ -131,16 +152,20 @@ if __name__ == "__main__":
                 data = json.loads(record_value)
                 logger.info("DATA: " + str(data))
                 # planning
-                HWconfiguration = data["confHW"]
+                ReceivedHWconfiguration = data["confHW"]
                 component_name = data["principal_component"]
+                currentHWConf = getCurrent_conf_hw(component_name)
                 # check the max confHW
                 maxConf = getMax_conf_hw(component_name)
-                if HWconfiguration < maxConf:
-                    data["action_confHW"] = HWconfiguration + 1
-                    json_message = json.dumps(data)
-                    logger.info(f"JSON_MESSAGE:{json_message}")
-                    produce_kafka_message(topic, producer_kafka, json_message)
-                    logger.info("Produced message to Kafka")
+                if currentHWConf < maxConf:
+                    if currentHWConf <= ReceivedHWconfiguration:
+                        data["action_confHW"] = currentHWConf + 1
+                        json_message = json.dumps(data)
+                        logger.info(f"JSON_MESSAGE:{json_message}")
+                        produce_kafka_message(topic, producer_kafka, json_message)
+                        logger.info("Produced message to Kafka")
+                    else:
+                        logger.error("Configuration already changed, this is a redundant message")
                 else:
                     logger.error("Impossible to upgrade the HW configuration because it is running the best confHW")
                 # make commit
@@ -149,6 +174,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     logger.error("Error in commit! -> " + str(e) + "\n")
                     raise SystemExit
+                # time.sleep(0.02)
     except (KeyboardInterrupt, SystemExit):  # to terminate correctly with either CTRL+C or docker stop
         pass
     finally:

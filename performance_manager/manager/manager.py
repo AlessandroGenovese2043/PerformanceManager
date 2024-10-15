@@ -241,6 +241,7 @@ def create_app():
                         "principal_component": principal_component,
                         "confHW": confHW
                     }
+                    logger.info(f"NOTA BENE:{response_data}")
                     return json.dumps(response_data), 200
             except Exception as e:
                 return f"Error in reading data: {str(e)}", 400
